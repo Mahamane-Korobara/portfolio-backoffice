@@ -2,31 +2,76 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+        'avatar',
+        'google_id',
+        'notify_new_articles',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'google_id',
+    ];
+
+    protected $casts = [
+        'email_verified_at'    => 'datetime',
+        'notify_new_articles'  => 'boolean',
+        'password'             => 'hashed',
+    ];
+
+    // --- Scopes ---
+
+    public function scopeAdmins($query)
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $query->where('role', 'admin');
+    }
+
+    public function scopeVisitors($query)
+    {
+        return $query->where('role', 'visitor');
+    }
+
+    public function scopeSubscribed($query)
+    {
+        return $query->where('notify_new_articles', true)
+            ->whereNotNull('email_verified_at');
+    }
+
+    // --- Helpers ---
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    // --- Relations ---
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function likes()
+    {
+        return $this->hasMany(ArticleLike::class);
+    }
+
+    public function newsletterSubscription()
+    {
+        return $this->hasOne(NewsletterSubscriber::class);
     }
 }
