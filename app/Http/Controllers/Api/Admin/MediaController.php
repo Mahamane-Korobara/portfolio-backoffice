@@ -10,8 +10,6 @@ use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
-use Intervention\Image\Interfaces\ImageInterface;
-use Intervention\Image\Laravel\Facades\Image;
 
 class MediaController extends Controller
 {
@@ -45,7 +43,8 @@ class MediaController extends Controller
         $width = $height = null;
 
         try {
-            $image  = Image::read($file->getRealPath());
+            $manager = new ImageManager(new Driver());
+            $image   = $manager->decodePath($file->getRealPath());
             $width  = $image->width();
             $height = $image->height();
         } catch (\Exception $e) {
